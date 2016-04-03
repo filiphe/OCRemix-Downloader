@@ -25,13 +25,12 @@ else:
     debug_string = None
 
 try:
-    if re.match('/all|everything/', title_string) is not None:
+    if re.match(r'all|everything', title_string) is not None:
         title_string = ''
+    title_regex = re.compile(".*" + title_string + ".*")
 except Exception:
     print("error: bad regular expression, " + title_string, file=sys.stderr)
 
-if re.match('/iTunes/', path_string) is not None:
-    path_string = "~/Music/iTunes/iTunes Media/Automatically Add to iTunes/"
 path_prefix = os.path.expanduser(path_string)
 if not os.path.exists(path_prefix):
     print("error: directory " + path_prefix + " does not exist")
@@ -52,7 +51,7 @@ def get_download_link_from_page(url):
 
 def download_and_write_file(url, path_prefix):
     filename = url.split('/')[-1]
-    path = path_prefix + filename
+    path = os.path.normpath(path_prefix + os.sep + filename)
     if debug:
         print("   Downloading: %s" % url)
     http_response = http.request('GET', url)
@@ -62,10 +61,40 @@ def download_and_write_file(url, path_prefix):
     if debug:
         print("   Written: %s" % path)
 
-feed = feedparser.parse(SOURCE_FEED)
-for item in feed["items"]:
-    download_url = item['link'].replace("www.", "")
-    link_to_mp3 = get_download_link_from_page(download_url)
-    download_and_write_file(link_to_mp3, path_prefix)
+def read_history_from_disk():
+    d = []
+    if os.path.exists(HISTORY_FILE):
+        with open(HISTORY_FILE, "r") as f:
+            contents = f.readlines()
+            for line in contents:
+                d.append(line.strip())
+    return d
 
+def write_history_to_disk(d):
+    f = open(HISTORY_FILE, "w")
+    f.write('\n'.join(d))
+    f.close()
+
+feed = feedparser.parse(SOURCE_FEED)
+d = read_history_from_disk()
+for item in feed["items"]:
+    title = item['title']
+
+    if title in d:
+        print(title)
+        print("   Skipping: Already in history file.\n\n")
+        continue
+    if title_regex.match(item['title']) is None:
+        print("   Skipping: Does not match input pattern %s\n\n" % title_regex.pattern)
+        continue
+
+    page_url = item['link'].replace("www.", "")
+    link_to_mp3 = get_download_link_from_page(page_url)
+    download_and_write_file(link_to_mp3, path_prefix)
+    d.append(title.strip())
+
+    if debug:
+        print()
+
+write_history_to_disk(d)
 
