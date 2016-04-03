@@ -10,6 +10,7 @@ http = urllib3.PoolManager()
 SOURCE_FEED = "http://www.ocremix.org/feeds/ten20/"
 HISTORY_FILE = os.path.dirname(__file__) + os.sep + '.ocremix_history'
 
+# set input arguments
 if len(sys.argv) < 3:
     print("usage: ocremix.py title_filter_pattern download_directory [debug]", file=sys.stderr)
     print("", file=sys.stderr)
@@ -19,11 +20,18 @@ if len(sys.argv) < 3:
 
 title_string = sys.argv[1]
 path_string = sys.argv[2]
+
+# debug mode?
 if len(sys.argv) == 4:
     debug_string = sys.argv[3]
 else:
     debug_string = None
+if debug_string:
+    debug = True
+else:
+    debug = False
 
+# parse the search query
 try:
     if re.match(r'all|everything', title_string) is not None:
         title_string = ''
@@ -31,18 +39,16 @@ try:
 except Exception:
     print("error: bad regular expression, " + title_string, file=sys.stderr)
 
+# parse the download path
 path_prefix = os.path.expanduser(path_string)
 if not os.path.exists(path_prefix):
     print("error: directory " + path_prefix + " does not exist")
     sys.exit(1)
 
-if debug_string:
-    debug = True
-else:
-    debug = False
 
 def get_download_link_from_page(url):
     response_body = http.request('GET', url).data.decode("utf-8")
+    # match the first *.mp3 url available
     match = re.findall('http:\/\/.*mp3', response_body)
     if match is not None:
         return match[0]
@@ -81,20 +87,20 @@ for item in feed["items"]:
     title = item['title']
 
     if title in d:
-        print(title)
-        print("   Skipping: Already in history file.\n\n")
+        if debug:
+            print(title)
+            print("   Skipping: Already in history file.\n\n")
         continue
     if title_regex.match(item['title']) is None:
-        print("   Skipping: Does not match input pattern %s\n\n" % title_regex.pattern)
+        if debug:
+            print(title)
+            print("   Skipping: Does not match input pattern %s\n\n" % title_regex.pattern)
         continue
 
     page_url = item['link'].replace("www.", "")
     link_to_mp3 = get_download_link_from_page(page_url)
     download_and_write_file(link_to_mp3, path_prefix)
     d.append(title.strip())
-
-    if debug:
-        print()
 
 write_history_to_disk(d)
 
