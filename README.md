@@ -4,9 +4,6 @@ It is *heavily* based on the [OverClocked ReMix Downloader](https://github.com/r
 This was done primarily because I wanted to try new things with Python, and this seemed like a fittingly sized project.
  ***
 **Dependencies**
-*urllib3
-*feedparser
-
 ```
 pip install urllib3
 pip install feedparser
