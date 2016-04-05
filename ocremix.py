@@ -85,8 +85,9 @@ feed = feedparser.parse(SOURCE_FEED)
 d = read_history_from_disk()
 for item in feed["items"]:
     title = item['title']
+    link = item['link']
 
-    if title in d:
+    if link in d:
         if debug:
             print(title)
             print("   Skipping: Already in history file.\n\n")
@@ -97,10 +98,10 @@ for item in feed["items"]:
             print("   Skipping: Does not match input pattern %s\n\n" % title_regex.pattern)
         continue
 
-    page_url = item['link'].replace("www.", "")
+    page_url = link.replace("www.", "")
     link_to_mp3 = get_download_link_from_page(page_url)
     download_and_write_file(link_to_mp3, path_prefix)
-    d.append(title.strip())
+    d.append(link.strip())
 
 write_history_to_disk(d)
 
