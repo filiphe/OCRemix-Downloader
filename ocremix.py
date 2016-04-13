@@ -8,11 +8,13 @@ import urllib3
 http = urllib3.PoolManager()
 
 SOURCE_FEED = "http://www.ocremix.org/feeds/ten20/"
-HISTORY_FILE = os.path.dirname(os.path.abspath(__file__)) + os.sep + '.ocremix_history'
+HISTORY_FILE = os.path.dirname(os.path.abspath(__file__)) + os.sep +\
+        '.ocremix_history'
 
 # set input arguments
 if len(sys.argv) < 3:
-    print("usage: ocremix.py title_filter_pattern download_directory [debug]", file=sys.stderr)
+    print("usage: ocremix.py title_filter_pattern download_directory [debug]",
+          file=sys.stderr)
     print("", file=sys.stderr)
     print("example: ocremix.py 'Sonic' 'downloads/'", file=sys.stderr)
     print("example: ocremix.py all '/media/music/OCREMIX/'", file=sys.stderr)
@@ -55,6 +57,7 @@ def get_download_link_from_page(url):
     else:
         return None
 
+
 def download_and_write_file(url, path_prefix):
     filename = url.split('/')[-1]
     path = os.path.normpath(path_prefix + os.sep + filename)
@@ -67,6 +70,7 @@ def download_and_write_file(url, path_prefix):
     if debug:
         print("   Written: %s" % path)
 
+
 def read_history_from_disk():
     d = []
     if os.path.exists(HISTORY_FILE):
@@ -75,6 +79,7 @@ def read_history_from_disk():
             for line in contents:
                 d.append(line.strip())
     return d
+
 
 def write_history_to_disk(d):
     f = open(HISTORY_FILE, "w")
@@ -95,7 +100,8 @@ for item in feed["items"]:
     if title_regex.match(item['title']) is None:
         if debug:
             print(title)
-            print("   Skipping: Does not match input pattern %s\n\n" % title_regex.pattern)
+            print("   Skipping: Does not match input pattern %s\n\n" %
+                  title_regex.pattern)
         continue
 
     page_url = link.replace("www.", "")
@@ -104,4 +110,3 @@ for item in feed["items"]:
     d.append(link.strip())
 
 write_history_to_disk(d)
-
