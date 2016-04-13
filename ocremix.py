@@ -8,7 +8,7 @@ import urllib3
 http = urllib3.PoolManager()
 
 SOURCE_FEED = "http://www.ocremix.org/feeds/ten20/"
-HISTORY_FILE = os.path.dirname(__file__) + os.sep + '.ocremix_history'
+HISTORY_FILE = os.path.dirname(os.path.abspath(__file__)) + os.sep + '.ocremix_history'
 
 # set input arguments
 if len(sys.argv) < 3:
