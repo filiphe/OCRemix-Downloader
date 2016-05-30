@@ -17,8 +17,7 @@ class OCRemixDownloader():
         self.SOURCE_FEED = source_feed
         self.HISTORY_FILE = history_file
 
-    def run(self):
-        # set input arguments
+    def parse_input_arguments(self):
         if len(sys.argv) < 3:
             print("""usage: ocremix.py title_filter_pattern
                     download_directory [debug]""",
@@ -29,8 +28,8 @@ class OCRemixDownloader():
                   file=sys.stderr)
             sys.exit(1)
 
-        title_string = sys.argv[1]
-        path_string = sys.argv[2]
+        self.title_string = sys.argv[1]
+        self.path_string = sys.argv[2]
 
         # debug mode?
         if len(sys.argv) == 4:
@@ -42,23 +41,24 @@ class OCRemixDownloader():
         else:
             self.debug = False
 
-        # parse the search query
+    def parse_search_query(self):
         try:
-            if re.match(r'all|everything', title_string) is not None:
-                title_string = ''
+            if re.match(r'all|everything', self.title_string) is not None:
+                self.title_string = ''
                 logging.debug("search query matches 'all'")
-            title_regex = re.compile(".*" + title_string + ".*")
+            self.title_regex = re.compile(".*" + self.title_string + ".*")
         except Exception:
-            print("error: bad regular expression, " + title_string,
+            print("error: bad regular expression, " + self.title_string,
                   file=sys.stderr)
 
         # parse the download path
-        path_prefix = os.path.expanduser(path_string)
-        if not os.path.exists(path_prefix):
-            print("error: directory " + path_prefix + " does not exist")
+        self.path_prefix = os.path.expanduser(self.path_string)
+        if not os.path.exists(self.path_prefix):
+            print("error: directory " + self.path_prefix + " does not exist")
             sys.exit(1)
-        logging.debug("using %s as target directory" % path_prefix)
+        logging.debug("using %s as target directory" % self.path_prefix)
 
+    def parse_feed_and_download_file(self):
         feed = feedparser.parse(self.SOURCE_FEED)
         logging.debug('parsed %s' % self.SOURCE_FEED)
         d = self.read_history_from_disk()
@@ -72,17 +72,17 @@ class OCRemixDownloader():
                     print(title)
                     print("   Skipping: Already in history file.\n\n")
                 continue
-            if title_regex.match(item['title']) is None:
+            if self.title_regex.match(item['title']) is None:
                 logging.debug('%s does not match input pattern' % title)
                 if self.debug:
                     print(title)
                     print("   Skipping: Does not match input pattern %s\n\n" %
-                          title_regex.pattern)
+                          self.title_regex.pattern)
                 continue
 
             page_url = link.replace("www.", "")
             link_to_mp3 = self.get_download_link_from_page(page_url)
-            self.download_and_write_file(link_to_mp3, path_prefix)
+            self.download_and_write_file(link_to_mp3, self.path_prefix)
             d.append(link.strip())
 
         self.write_history_to_disk(d)
@@ -127,6 +127,15 @@ class OCRemixDownloader():
         f.write('\n'.join(d))
         f.close()
         logging.debug('%s written' % self.HISTORY_FILE)
+
+    def run(self):
+        # set input arguments
+        self.parse_input_arguments()
+
+        # parse the search query
+        self.parse_search_query()
+
+        self.parse_feed_and_download_file()
 
 if __name__ == '__main__':
     OCRemixDownloader().run()
