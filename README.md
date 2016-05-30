@@ -5,6 +5,7 @@ This was done primarily because I wanted to try new things with Python, and this
  ***
 **Dependencies**
 ```
-pip install urllib3
 pip install feedparser
+pip install logging
+pip install requests
 ```
