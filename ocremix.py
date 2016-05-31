@@ -58,10 +58,11 @@ class OCRemixDownloader():
             sys.exit(1)
         logging.debug("using %s as target directory" % self.path_prefix)
 
-    def parse_feed_and_download_file(self):
+    def parse_feed_and_get_page_links(self):
         feed = feedparser.parse(self.SOURCE_FEED)
         logging.debug('parsed %s' % self.SOURCE_FEED)
         d = self.read_history_from_disk()
+        links = []
         for item in feed["items"]:
             title = item['title']
             link = item['link']
@@ -80,12 +81,16 @@ class OCRemixDownloader():
                           self.title_regex.pattern)
                 continue
 
-            page_url = link.replace("www.", "")
-            link_to_mp3 = self.get_download_link_from_page(page_url)
-            self.download_and_write_file(link_to_mp3, self.path_prefix)
-            d.append(link.strip())
+            links.append(link)
+        return links
 
-        self.write_history_to_disk(d)
+    def fetch_mp3s(self, page_urls):
+            d = self.read_history_from_disk()
+            for page_url in page_urls:
+                link_to_mp3 = self.get_download_link_from_page(page_url)
+                self.download_and_write_file(link_to_mp3, self.path_prefix)
+                d.append(page_url.strip())
+            self.write_history_to_disk(d)
 
     def get_download_link_from_page(self, url):
         response_body = requests.get(url).text
@@ -135,7 +140,8 @@ class OCRemixDownloader():
         # parse the search query
         self.parse_search_query()
 
-        self.parse_feed_and_download_file()
+        links = self.parse_feed_and_get_page_links()
+        self.fetch_mp3s(links)
 
 if __name__ == '__main__':
     OCRemixDownloader().run()
