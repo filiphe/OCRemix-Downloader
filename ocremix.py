@@ -14,8 +14,8 @@ class OCRemixDownloader():
     def __init__(self, source_feed="http://www.ocremix.org/feeds/ten20/",
                  history_file=os.path.dirname(os.path.abspath(__file__)) +
                  os.sep + '.ocremix_history'):
-        self.SOURCE_FEED = source_feed
-        self.HISTORY_FILE = history_file
+        self.source_feed = source_feed
+        self.history_file = history_file
 
     def parse_input_arguments(self):
         if len(sys.argv) < 3:
@@ -58,16 +58,15 @@ class OCRemixDownloader():
             sys.exit(1)
         logging.debug("using %s as target directory" % self.path_prefix)
 
-    def parse_feed_and_get_page_links(self):
-        feed = feedparser.parse(self.SOURCE_FEED)
-        logging.debug('parsed %s' % self.SOURCE_FEED)
-        d = self.read_history_from_disk()
+    def parse_feed_and_get_page_links(self) -> [str]:
+        feed = feedparser.parse(self.source_feed)
+        logging.debug('parsed %s' % self.source_feed)
         links = []
         for item in feed["items"]:
             title = item['title']
             link = item['link']
 
-            if link in d:
+            if link in self._history:
                 logging.debug('%s is already in history file.' % title)
                 if self.debug:
                     print(title)
@@ -84,13 +83,11 @@ class OCRemixDownloader():
             links.append(link)
         return links
 
-    def fetch_mp3s(self, page_urls):
-            d = self.read_history_from_disk()
+    def fetch_mp3s(self, page_urls: [str]) -> None:
             for page_url in page_urls:
                 link_to_mp3 = self.get_download_link_from_page(page_url)
                 self.download_and_write_file(link_to_mp3, self.path_prefix)
-                d.append(page_url.strip())
-            self.write_history_to_disk(d)
+                self._history.append(page_url.strip())
 
     def get_download_link_from_page(self, url):
         response_body = requests.get(url).text
@@ -116,22 +113,23 @@ class OCRemixDownloader():
             print("   Written: %s" % path)
 
     def read_history_from_disk(self):
-        d = []
-        if os.path.exists(self.HISTORY_FILE):
-            logging.debug('%s found' % self.HISTORY_FILE)
-            with open(self.HISTORY_FILE, "r") as f:
+        self._history = []
+        if os.path.exists(self.history_file):
+            logging.debug('%s found' % self.history_file)
+            with open(self.history_file, "r") as f:
                 contents = f.readlines()
                 for line in contents:
-                    d.append(line.strip())
-        logging.debug('%s read' % self.HISTORY_FILE)
-        return d
+                    self._history.append(line.strip())
+        else:
+            logging.debug('%s created' % self.history_file)
+        logging.debug('%s read' % self.history_file)
 
-    def write_history_to_disk(self, d):
-        f = open(self.HISTORY_FILE, "w")
-        logging.debug('%s found' % self.HISTORY_FILE)
-        f.write('\n'.join(d))
+    def write_history_to_disk(self):
+        f = open(self.history_file, "w")
+        logging.debug('%s found' % self.history_file)
+        f.write('\n'.join(self._history))
         f.close()
-        logging.debug('%s written' % self.HISTORY_FILE)
+        logging.debug('%s written' % self.history_file)
 
     def run(self):
         # set input arguments
@@ -140,8 +138,10 @@ class OCRemixDownloader():
         # parse the search query
         self.parse_search_query()
 
+        self.read_history_from_disk()
         links = self.parse_feed_and_get_page_links()
         self.fetch_mp3s(links)
+        self.write_history_to_disk()
 
 if __name__ == '__main__':
     OCRemixDownloader().run()
