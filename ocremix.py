@@ -8,7 +8,7 @@ import requests
 
 
 class OCRemixDownloader():
-    logging.basicConfig(filename='ocremix.log', level=logging.DEBUG,
+    logging.basicConfig(filename=os.path.dirname(os.path.abspath(__file__)) + os.sep + 'ocremix.log', level=logging.DEBUG,
                         format='%(asctime)s %(message)s')
 
     def __init__(self, source_feed="http://www.ocremix.org/feeds/ten20/",
