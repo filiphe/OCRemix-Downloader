@@ -115,7 +115,6 @@ class OCRemixDownloader():
     def read_history_from_disk(self):
         self._history = []
         if os.path.exists(self.history_file):
-            logging.debug('%s found' % self.history_file)
             with open(self.history_file, "r") as f:
                 contents = f.readlines()
                 for line in contents:
@@ -125,10 +124,9 @@ class OCRemixDownloader():
         logging.debug('%s read' % self.history_file)
 
     def write_history_to_disk(self):
-        f = open(self.history_file, "w")
-        logging.debug('%s found' % self.history_file)
-        f.write('\n'.join(self._history))
-        f.close()
+        with open(self.history_file, "w") as f:
+            logging.debug('%s opened' % self.history_file)
+            f.write('\n'.join(self._history))
         logging.debug('%s written' % self.history_file)
 
     def run(self):
