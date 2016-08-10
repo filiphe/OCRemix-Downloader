@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 import feedparser
+import hashlib
 import logging
 import os
 import re
-import sys
 import requests
+import sys
 
 
 class OCRemixDownloader():
@@ -16,6 +17,7 @@ class OCRemixDownloader():
                  os.sep + '.ocremix_history'):
         self.source_feed = source_feed
         self.history_file = history_file
+        self.debug = False
 
     def parse_input_arguments(self):
         if len(sys.argv) < 3:
@@ -99,18 +101,33 @@ class OCRemixDownloader():
         else:
             return None
 
+    def get_md5_sum_from_page(self, url):
+        response_body = requests.get(url).text
+        response_split = response_body.split('\n')
+        for line in response_split:
+            match = re.search(r'^.*MD5.*$', line)
+            if match is not None:
+                break
+        md5_string = match.string.split('<')[-2].split('>')[1]
+        return md5_string
+
     def download_and_write_file(self, url, path_prefix):
         filename = url.split('/')[-1]
         path = os.path.normpath(path_prefix + os.sep + filename)
         if self.debug:
             print("   Downloading: %s" % url)
         http_response = requests.get(url)
-        f = open(path, 'w+b')
-        f.write(http_response.content)
-        f.close()
-        logging.debug('mp3 written to %s' % path)
-        if self.debug:
-            print("   Written: %s" % path)
+        with open(path, 'w+b') as f:
+            f.write(http_response.content)
+            logging.debug('mp3 written to %s' % path)
+            if self.debug:
+                print("   Written: %s" % path)
+            return f
+
+    def get_md5_from_file(self, filename):
+        with open(filename, 'r+b') as f:
+            content = f.read()
+            return hashlib.md5(content).hexdigest()
 
     def read_history_from_disk(self):
         self._history = []
